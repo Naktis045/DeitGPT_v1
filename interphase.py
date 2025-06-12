@@ -43,43 +43,28 @@ Valid response examples:
 st.markdown("🔐 Please log in to use DietGPT **log in**.")
 
 
-# --- Page Navigation Logic (Basic Example) ---
+# --- Page Navigation Logic  ---
 if st.session_state.page == "home":
     if st.button("🔐 Login"):
-        # This will change the session state and re-run the script
         st.session_state.page = "login"
 
 elif st.session_state.page == "login":
-    # This assumes you have a 'pages' directory with a 'login.py' file.
-    # The actual content of login.py is not provided here.
     try:
         from pages.login import main as login_main
         login_main()
     except ImportError:
         st.error("Login module (pages/login.py) not found. Please create it.")
-        st.stop()
-    # After login, you might set st.session_state.page = "diet"
-    # For now, we'll assume a successful login implicitly allows access to the diet features.
 
-# This block is executed if the page is 'diet' or if a successful login
-# is assumed to have happened and the user is on the main app page.
-# For demonstration, we'll proceed directly to the diet features if logged_in state is set.
-# You might want to remove 'home' and 'login' pages once the login flow is complete.
 if st.session_state.page == "diet" or ("logged_in" in st.session_state and st.session_state.logged_in):
-    # Check if the user is logged in (if a login mechanism is in place)
-    # If not logged in, show a warning and stop execution for this section.
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
-        st.warning("🔒 You must be logged in to use DietGPT.")
-        # If you want to force redirect to login, uncomment the next line and comment st.stop()
-        # st.session_state.page = "login"
-        st.stop() # Stops execution of the rest of the script if not logged in.
+        st.warning("🔐 Please log in to use DietGPT")
 
     # --- Sugar Rate Slider and Logic ---
-    sugar = st.slider('Define your sugar rate', min_value=0.0, max_value=12.0, step=0.5, value=5.0)
-    st.write("Your sugar is:", sugar)
+sugar = st.slider('Define your sugar rate', min_value=0.0, max_value=12.0, step=0.5, value=5.0)
+st.write("Your sugar is:", sugar)
 
     # Custom CSS for the Streamlit slider to match branding/aesthetics
-    st.markdown(f"""
+st.markdown(f"""
         <style>
         div.stSlider > div[data-baseweb="slider"] > div > div {{
             background: linear-gradient(to right, rgb(1, 183, 158) 0%,
@@ -101,13 +86,13 @@ if st.session_state.page == "diet" or ("logged_in" in st.session_state and st.se
     """, unsafe_allow_html=True)
 
     # Logic based on sugar rate value
-    if 0 <= sugar <= 3:
-        st.markdown(f"<span style='color: red;'>Your sugar is too low: {sugar}</span>", unsafe_allow_html=True)
-        st.warning("🚨 **Call Ambulance!** Your sugar level is critically low.")
+if 0 <= sugar <= 4:
+    st.markdown(f"<span style='color: red;'>Your sugar is too low: {sugar}</span>", unsafe_allow_html=True)
+    st.warning("🚨 **Call Ambulance!** Your sugar level is critically low.")
 
-    elif 4 <= sugar <= 4.5:
-        st.markdown(f"<span style='color: blue;'>Your sugar is low: {sugar}</span>", unsafe_allow_html=True)
-        st.info("""
+elif 4 <= sugar <= 3.4:
+    st.markdown(f"<span style='color: blue;'>Your sugar is low: {sugar}</span>", unsafe_allow_html=True)
+    st.info("""
     🟦 **1. Low Sugar Rate (Hypoglycemia)**
 
     When your blood sugar is too low, the goal is to raise it safely and maintain stability throughout the day.
@@ -126,13 +111,13 @@ if st.session_state.page == "diet" or ("logged_in" in st.session_state and st.se
     * Alcohol and caffeine on an empty stomach.
     * Skipping meals.
     """)
-    elif sugar == 5:
-        st.markdown(f"<span style='color: green;'>Your sugar is in a normal range: {sugar}</span>", unsafe_allow_html=True)
-        st.success("✅ Your sugar level is currently in a healthy range. Keep up the good work!")
+elif 3.5 <= sugar <=5.5:
+    st.markdown(f"<span style='color: green;'>Your sugar is in a normal range: {sugar}</span>", unsafe_allow_html=True)
+    st.success("✅ Your sugar level is currently in a healthy range. Keep up the good work!")
 
-    elif 6 <= sugar <= 7:
-        st.markdown(f"<span style='color: red;'>Your sugar is too high: {sugar}</span>", unsafe_allow_html=True)
-        st.info("""
+elif 5.6 <= sugar <= 7:
+    st.markdown(f"<span style='color: red;'>Your sugar is too high: {sugar}</span>", unsafe_allow_html=True)
+    st.info("""
     🟥 **2. High Sugar Rate (Hyperglycemia)**
 
     Here, the focus is on lowering and stabilizing blood sugar through balanced, low-glycemic meals.
@@ -151,44 +136,38 @@ if st.session_state.page == "diet" or ("logged_in" in st.session_state and st.se
     * Sweetened beverages: Soda, sweetened teas, energy drinks.
     * Processed snacks: Chips, cookies, and fast food.
     """)
-    elif 7 < sugar <= 12: # Changed from 7 <= sugar to 7 < sugar to avoid overlap with 6-7 range
-        st.markdown(f"<span style='color: red;'>Your sugar is too high: {sugar}</span>", unsafe_allow_html=True)
-        st.warning("🚨 **Call Ambulance!** Your sugar level is critically high.")
+elif 7 < sugar <= 12: # Changed from 7 <= sugar to 7 < sugar to avoid overlap with 6-7 range
+    st.markdown(f"<span style='color: red;'>Your sugar is too high: {sugar}</span>", unsafe_allow_html=True)
+    st.warning("🚨 **Call Ambulance!** Your sugar level is critically high.")
 
 
     # --- Meal Photo Upload and Calorie Estimation ---
-    uploaded_file = st.file_uploader(
-        "📷 Upload or take a meal photo",
-        type=["jpg", "jpeg", "png"],
-        accept_multiple_files=False,
-        label_visibility="visible"
+uploaded_file = st.file_uploader(
+    "📷 Upload or take a meal photo",
+    type=["jpg", "jpeg", "png"],
+    accept_multiple_files=False,
+    label_visibility="visible"
     )
 
-    if uploaded_file:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="📸 Your Meal Photo", use_column_width=True)
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="📸 Your Meal Photo", use_column_width=True)
 
-        if st.button("Estimate Calories"):
-            with st.spinner("🔍 Analyzing image..."):
-                # Save the uploaded image to a temporary file
-                # This is necessary because the CalorieEstimator expects a file path.
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-                    image.save(tmp.name)
-                    temp_path = tmp.name
+    if st.button("Estimate Calories"):
+        with st.spinner("🔍 Analyzing image..."):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                image.save(tmp.name)
+                temp_path = tmp.name
 
-                try:
-                    # Run the analysis using the CalorieEstimator.
-                    # asyncio.run is used here because analyze_image is an async function.
-                    result = asyncio.run(estimator.analyze_image(temp_path))
-                finally:
-                    # Ensure the temporary file is deleted after analysis,
-                    # regardless of success or failure, to clean up resources.
-                    os.remove(temp_path)
+            try:
+                result = asyncio.run(estimator.analyze_image(temp_path))
+            finally:
+                os.remove(temp_path)
 
             # Display the estimation result to the user
-            if "total_calories" in result:
-                st.success(f"✅ Calorie Estimation Result: {result['raw_output']}")
-            else:
-                st.error("❌ Could not extract calorie count. Please try another image or check the API key.")
-                st.text_area("Raw Output from AI (for debugging):", result.get("raw_output", "No output returned."), height=100)
+        if "total_calories" in result:
+            st.success(f"✅ Calorie Estimation Result: {result['raw_output']}")
+        else:
+            st.error("❌ Could not extract calorie count. Please try another image or check the API key.")
+            st.text_area("Raw Output from AI (for debugging):", result.get("raw_output", "No output returned."), height=100)
 
