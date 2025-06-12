@@ -54,7 +54,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 # Define a specific placeholder that the code will check against.
 # This value should NOT be your actual API key.
 # It's just a unique string used for validation in case the env var isn't set.
-PLACEHOLDER_KEY = 'AIzaSyDISPjkx6Xfq5aPTYoVuguLK-d5k5EWis4'
+PLACEHOLDER_KEY = 'AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns'
 
 # If the environment variable is not set, we will use this placeholder.
 if not GEMINI_API_KEY:

@@ -18,7 +18,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 # The CalorieEstimator class itself handles the `genai.configure()` call.
 # Pass a dummy key if GEMINI_API_KEY is None, but the main.py will raise an error
 # if it's the placeholder key. This ensures the app doesn't crash here immediately.
-estimator = CalorieEstimator(api_key=GEMINI_API_KEY or "AIzaSyDISPjkx6Xfq5aPTYoVuguLK-d5k5EWis4")
+estimator = CalorieEstimator(api_key=GEMINI_API_KEY or "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns")
 
 
 # --- Streamlit Page Configuration and Initial State ---
