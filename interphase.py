@@ -12,7 +12,7 @@ load_dotenv()
 
 # Retrieve the GEMINI_API_KEY from environment variables.
 # For Streamlit Cloud, ensure this exact variable name is set in your secrets.
-GEMINI_API_KEY = os.getenv('AIzaSyDISPjkx6Xfq5aPTYoVuguLK-d5k5EWis4')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # Initialize the CalorieEstimator with the API key.
 # The CalorieEstimator class itself handles the `genai.configure()` call.
