@@ -1,24 +1,24 @@
 import logging
 import os
-import datetime as dt
-import base64
+import datetime as dt # Not directly used in the provided snippet but often useful
+import base64 # Not directly used for PIL image but common for other image handling
 import io
 import re
 import asyncio
 
 from dotenv import load_dotenv
 from PIL import Image
-import pandas as pd
+import pandas as pd # Used in the batch processing 'main' function, not the CalorieEstimator itself
 import google.generativeai as genai
 from tenacity import (
     retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 )
-from tqdm import tqdm
+from tqdm import tqdm # Used for progress bar in batch processing
 
-# Configure logging for better visibility
+# Configure logging for better visibility and debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# System prompt for the LLM
+# --- System Prompt for the LLM (Critical for consistent output) ---
 SYSTEM_PROMPT = """You are a Food analyst specializing in estimating the calories of a meal from a photo. Your task is to analyze a meal from an image and provide an estimate.
 
 Follow these steps to complete your analysis:
@@ -45,36 +45,38 @@ Valid response examples:
 * CALORIES: 320
 """
 
-# Load API key from environment variables (important for local development)
-load_dotenv()
+# --- API Key Management (Crucial for preventing the OSError) ---
+load_dotenv() # Load environment variables from a .env file (for local testing)
+
 # Attempt to get the API key from environment variables first.
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # Define a specific placeholder that the code will check against.
 # This value should NOT be your actual API key.
-# It's just a unique string used for validation.
-PLACEHOLDER_KEY = 'YOUR_UNIQUE_GEMINI_API_KEY_PLACEHOLDER_HERE'
+# It's just a unique string used for validation in case the env var isn't set.
+PLACEHOLDER_KEY = 'AIzaSyDISPjkx6Xfq5aPTYoVuguLK-d5k5EWis4'
 
 # If the environment variable is not set, we will use this placeholder.
 if not GEMINI_API_KEY:
     GEMINI_API_KEY = PLACEHOLDER_KEY
 
 # Final check: if the key is still the placeholder, it means it hasn't been set.
+# This is the line that caused your original OSError.
 if GEMINI_API_KEY == PLACEHOLDER_KEY:
-    raise EnvironmentError("GEMINI_API_KEY not found. Please set it as an environment variable or "
-                            "uncomment and replace the placeholder on line 64 with your actual API key obtained from Google AI Studio.")
+    raise EnvironmentError("GEMINI_API_KEY not found. Please set it as an environment variable (e.g., in Streamlit Cloud secrets or a local .env file) or "
+                            "replace the placeholder on line 64 with your actual API key obtained from Google AI Studio (not recommended for production).")
 
-# Configure the genai library with your API key
-# This global configuration is important for all subsequent calls
+# Configure the genai library with your API key.
+# This global configuration is important for all subsequent API calls.
 genai.configure(api_key=GEMINI_API_KEY)
 
 
 class CalorieEstimator:
     def __init__(self, api_key):
-        # api_key is now configured globally via genai.configure, but storing it for consistency
-        self.api_key = api_key 
+        # api_key is now configured globally via genai.configure, but storing it for consistency.
+        self.api_key = api_key
         self.system_prompt = SYSTEM_PROMPT
-        # Use a compatible Gemini model for vision tasks
+        # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
         self.model = genai.GenerativeModel(self.model_name)
 
@@ -82,91 +84,100 @@ class CalorieEstimator:
     def encode_image_to_pil_image(image_path):
         """
         Loads an image from the given path and returns a PIL Image object.
-        This method is modified to ensure the file handle is closed immediately,
-        preventing 'PermissionError' on file deletion.
+        This method ensures the file handle is properly closed, preventing 'PermissionError'
+        when Streamlit tries to delete temporary files on Windows.
         """
         try:
-            # Read the image bytes from the file
+            # Read the image bytes from the file to ensure the file handle is closed
             with open(image_path, 'rb') as f:
                 image_bytes = f.read()
-            
-            # Create a BytesIO object from the image bytes
+
+            # Create a BytesIO object from the image bytes, then open with PIL
             img_buffer = io.BytesIO(image_bytes)
-            
-            # Open the PIL Image from the BytesIO object
             return Image.open(img_buffer)
         except Exception as e:
             logging.error(f"Error loading image from {image_path}: {e}")
-            raise
+            raise # Re-raise the exception to indicate failure
 
     @retry(
-        wait=wait_exponential(multiplier=1, min=4, max=20),
-        stop=stop_after_attempt(5),
-        # Retry for any general exception, or specific API errors if identified
+        wait=wait_exponential(multiplier=1, min=4, max=20), # Exponential backoff for retries
+        stop=stop_after_attempt(5), # Try up to 5 times
+        # Retry for any general exception, or specific API errors if identified.
+        # asyncio.TimeoutError is added for potential async operation timeouts.
         retry=retry_if_exception_type((Exception, asyncio.TimeoutError)),
-        retry_error_callback=lambda retry_state: {
+        retry_error_callback=lambda retry_state: { # Callback if all retries fail
             "error": f"All retries failed: {retry_state.outcome.exception()}",
             "raw_output": str(retry_state.outcome.exception())
         }
     )
     async def analyze_image(self, image_path):
         """
-        Analyzes the given image using the Gemini Pro Vision model.
+        Analyzes the given image using the configured Gemini Vision model.
+        It constructs the request with a system prompt and the image.
         """
         logging.info(f"Analyzing image: {image_path}")
         try:
             img_pil = self.encode_image_to_pil_image(image_path)
 
-            # Gemini API expects content as a list of parts (text and image)
+            # Gemini API expects content as a list of parts (text and image).
+            # The system prompt and user query are combined here.
             parts = [
                 self.system_prompt, # System instruction can be a part
                 "What is the total calorie count for this meal? Remember to format your final answer as CALORIES:[number]",
                 img_pil # Pass the PIL Image object directly
             ]
 
-            # The generate_content method automatically handles API calls and authentication
-            # Set stream=False for non-streaming response.
-            # Using asyncio.to_thread to run blocking genai.generate_content in an async context
+            # The generate_content method automatically handles API calls and authentication.
+            # Using asyncio.to_thread to run blocking genai.generate_content in an async context,
+            # which is necessary because Streamlit's event loop might be blocked otherwise.
             response = await asyncio.to_thread(self.model.generate_content, parts, stream=False)
 
             return self._parse_api_response(response)
 
         except genai.types.BlockedPromptException as e:
+            # Handle cases where the prompt or content is blocked by safety filters
             logging.error(f"Prompt was blocked for {image_path}: {e.response.prompt_feedback}")
             return {"error": f"Prompt blocked: {e.response.prompt_feedback}", "raw_output": str(e.response.prompt_feedback)}
         except Exception as e:
+            # Catch any other exceptions during the API request and re-raise to trigger tenacity retry
             logging.error(f"API request failed for {image_path}: {e}")
-            # Re-raise to trigger tenacity retry
-            raise ValueError(f"Gemini API request failed: {e}")
+            raise ValueError(f"Gemini API request failed: {e}") # Re-raise as ValueError for retry mechanism
 
     @staticmethod
     def _parse_api_response(result):
         """
-        Parses the Gemini API response to extract the calorie count.
+        Parses the Gemini API response (text content) to extract the calorie count.
+        It uses a regular expression to find the "CALORIES: [number]" pattern.
         """
         try:
             # Access the text from the candidate's content
             content = result.text
+            # Use regex to find "CALORIES: " followed by a number (integer or float)
             if calorie_match := re.search(r'CALORIES:\s*(\d+(?:\.\d+)?)', content):
+                # Return the extracted number as a float and the raw output
                 return {"total_calories": float(calorie_match.group(1)), "raw_output": content}
             logging.warning(f"Could not extract calorie count from response: {content}")
-            return {"error": "Could not extract calorie count response", "raw_output": content}
+            # If no match found, return an error message with the raw output
+            return {"error": "Could not extract calorie count from response", "raw_output": content}
         except Exception as e:
+            # Handle errors during parsing the response
             logging.error(f"Error parsing API response: {e}, Raw result: {result}")
             return {"error": f"Error parsing API response: {e}", "raw_output": str(result)}
 
     async def process_single_image(self, image_path, actual_calories):
         """
-        Processes a single image file to estimate calories and record results.
+        Processes a single image file to estimate calories and records the results.
+        This function is primarily used for batch processing/evaluation, not the Streamlit UI directly.
         """
         if not os.path.exists(image_path):
             logging.error(f"File does not exist: {image_path}")
-            return None
+            return None # Return None if the file is not found
         try:
-            result = await self.analyze_image(image_path)
+            result = await self.analyze_image(image_path) # Call the async analysis method
             logging.info(f"API raw output for {os.path.basename(image_path)}:\n{result.get('raw_output')}")
 
             if estimated_calories := result.get('total_calories'):
+                # If calorie estimation is successful, return a dictionary with results
                 return {
                     'image': os.path.basename(image_path),
                     'actual_calories': float(actual_calories),
@@ -177,37 +188,37 @@ class CalorieEstimator:
             logging.error(f"Error processing {image_path}: {result.get('error', 'Unknown error')}")
         except Exception as e:
             logging.error(f"Exception processing {image_path}: {str(e)}")
-        return None
+        return None # Return None if any error occurs during processing
 
 async def main():
     """
-    Main function to load the dataset, process images, and save results.
-    This function is primarily for batch processing, not for the Streamlit UI flow.
+    Main function to load the dataset, process images in a batch, and save results.
+    This function is intended for standalone execution (e.g., for model evaluation),
+    not typically part of the live Streamlit UI.
     """
     script_dir = os.path.dirname(__file__)
-    dataset_path = os.path.join(script_dir, 'DATASET')
+    dataset_path = os.path.join(script_dir, 'DATASET') # Assuming a 'DATASET' folder exists
     results_dir = "estimation_results"
 
-    # Initialize CalorieEstimator with the Gemini API key
-    # Note: genai.configure() handles the key globally, but passing it is harmless.
+    # Initialize CalorieEstimator (API key handled globally by genai.configure())
     estimator = CalorieEstimator(api_key=GEMINI_API_KEY)
 
     csv_path = os.path.join(dataset_path, 'processed_labels.csv')
     if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+        raise FileNotFoundError(f"CSV file not found: {csv_path}. Please ensure it's in the DATASET folder.")
 
-    # Load and preprocess CSV
+    # Load and preprocess CSV containing image paths and actual calorie labels
     df = pd.read_csv(csv_path)
-    df.columns = df.columns.str.strip().str.lower()
+    df.columns = df.columns.str.strip().str.lower() # Clean column names
     if 'calories' not in df.columns:
-        raise ValueError("❌ 'calories' column not found in the dataset.")
-    df = df.dropna(subset=['calories'])
+        raise ValueError("❌ 'calories' column not found in the dataset CSV.")
+    df = df.dropna(subset=['calories']) # Drop rows with missing calorie data
 
     logging.info(f"DataFrame head:\n{df.head()}")
     logging.info(f"DataFrame shape: {df.shape}")
     logging.info(f"Columns in CSV: {df.columns.tolist()}")
 
-    # Check for missing image files and log warnings
+    # Check for missing image files before processing and log warnings
     missing_files = []
     for _, row in df.iterrows():
         full_path = os.path.join(dataset_path, row['img_path'])
@@ -219,30 +230,31 @@ async def main():
         for mf in missing_files[:10]:
             logging.warning(mf)
 
-    # Create tasks for all images
+    # Create asynchronous tasks for all images to process them concurrently
     tasks = [
         estimator.process_single_image(os.path.join(dataset_path, row['img_path']), row['calories'])
         for _, row in df.iterrows()
     ]
 
     results = []
-    # Use tqdm for a progress bar while processing tasks
+    # Use tqdm for a progress bar to visualize the processing status
     with tqdm(total=len(tasks), desc="Processing images with Gemini") as pbar:
-        for task in asyncio.as_completed(tasks):
+        for task in asyncio.as_completed(tasks): # Process tasks as they complete
             result = await task
             if result:
                 results.append(result)
-            pbar.update(1)
+            pbar.update(1) # Update the progress bar
 
-    # Save results to a CSV file
+    # Save the processed results to a new CSV file
     if results:
-        os.makedirs(results_dir, exist_ok=True)
+        os.makedirs(results_dir, exist_ok=True) # Create results directory if it doesn't exist
         output_file = os.path.join(results_dir, 'estimation_gemini.csv')
-        pd.DataFrame(results).to_csv(output_file, index=False)
+        pd.DataFrame(results).to_csv(output_file, index=False) # Save as CSV without index
         logging.info(f'Results are saved to {output_file}')
     else:
         logging.warning("No results to save.")
 
 if __name__ == "__main__":
-    # This block only runs when main.py is executed directly, not when imported
+    # This block only runs when main.py is executed directly (e.g., `python main.py`),
+    # not when it's imported by interphase.py. It's useful for batch evaluation.
     asyncio.run(main())
