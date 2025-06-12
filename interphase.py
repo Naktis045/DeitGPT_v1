@@ -81,11 +81,11 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
     # Logic based on sugar rate value
-if 0 <= sugar <= 3.5:
+if 0 <= sugar <= 4:
     st.markdown(f"<span style='color: red;'>Your sugar is too low: {sugar}</span>", unsafe_allow_html=True)
     st.warning("🚨 **Call Ambulance!** Your sugar level is critically low.")
 
-elif 3.6 <= sugar <= 3.8:
+elif 4 <= sugar <= 3.4:
     st.markdown(f"<span style='color: blue;'>Your sugar is low: {sugar}</span>", unsafe_allow_html=True)
     st.info("""
     🟦 **1. Low Sugar Rate (Hypoglycemia)**
@@ -106,7 +106,7 @@ elif 3.6 <= sugar <= 3.8:
     * Alcohol and caffeine on an empty stomach.
     * Skipping meals.
     """)
-elif 3.9 <= sugar <=5.5:
+elif 3.5 <= sugar <=5.5:
     st.markdown(f"<span style='color: green;'>Your sugar is in a normal range: {sugar}</span>", unsafe_allow_html=True)
     st.success("✅ Your sugar level is currently in a healthy range. Keep up the good work!")
 
