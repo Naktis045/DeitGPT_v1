@@ -4,21 +4,14 @@ from PIL import Image
 import tempfile
 import os
 from main import CalorieEstimator # Import your CalorieEstimator class
-from dotenv import load_dotenv
+# Removed: from dotenv import load_dotenv
 
-# Load environment variables from .env file (for local development)
-# This allows you to keep your GEMINI_API_KEY out of your codebase.
-load_dotenv()
+# Note: GEMINI_API_KEY is now directly set in main.py, so no need to fetch it here.
+# Removed: GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# Retrieve the GEMINI_API_KEY from environment variables.
-# For Streamlit Cloud, ensure this exact variable name is set in your secrets.
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
-# Initialize the CalorieEstimator with the API key.
-# The CalorieEstimator class itself handles the `genai.configure()` call.
-# Pass a dummy key if GEMINI_API_KEY is None, but the main.py will raise an error
-# if it's the placeholder key. This ensures the app doesn't crash here immediately.
-estimator = CalorieEstimator(api_key=GEMINI_API_KEY or "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns")
+# Initialize the CalorieEstimator. The API key is now handled internally by main.py
+# which has the key hardcoded.
+estimator = CalorieEstimator()
 
 
 # --- Streamlit Page Configuration and Initial State ---

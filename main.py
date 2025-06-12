@@ -6,7 +6,8 @@ import io
 import re
 import asyncio
 
-from dotenv import load_dotenv
+# Removed: from dotenv import load_dotenv # No longer needed as key is hardcoded
+
 from PIL import Image
 import pandas as pd # Used in the batch processing 'main' function, not the CalorieEstimator itself
 import google.generativeai as genai
@@ -46,25 +47,20 @@ Valid response examples:
 """
 
 # --- API Key Management (Crucial for preventing the OSError) ---
-load_dotenv() # Load environment variables from a .env file (for local testing)
+# Your API key is now hardcoded directly as requested.
+# WARNING: Hardcoding API keys is generally not recommended for production
+# environments due to security risks. Consider using environment variables
+# or Streamlit Cloud secrets for better security practices.
+GEMINI_API_KEY = "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns"
 
-# Attempt to get the API key from environment variables first.
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
-# Define a specific placeholder that the code will check against.
-# This value should NOT be your actual API key.
-# It's just a unique string used for validation in case the env var isn't set.
-PLACEHOLDER_KEY = 'AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns'
-
-# If the environment variable is not set, we will use this placeholder.
-if not GEMINI_API_KEY:
-    GEMINI_API_KEY = PLACEHOLDER_KEY
-
-# Final check: if the key is still the placeholder, it means it hasn't been set.
-# This is the line that caused your original OSError.
-if GEMINI_API_KEY == PLACEHOLDER_KEY:
-    raise EnvironmentError("GEMINI_API_KEY not found. Please set it as an environment variable (e.g., in Streamlit Cloud secrets or a local .env file) or "
-                            "replace the placeholder on line 64 with your actual API key obtained from Google AI Studio (not recommended for production).")
+# Removed previous environment variable loading and placeholder checks:
+# load_dotenv()
+# GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+# PLACEHOLDER_KEY = 'YOUR_UNIQUE_GEMINI_API_KEY_PLACEHOLDER_HERE'
+# if not GEMINI_API_KEY:
+#     GEMINI_API_KEY = PLACEHOLDER_KEY
+# if GEMINI_API_KEY == PLACEHOLDER_KEY:
+#     raise EnvironmentError(...)
 
 # Configure the genai library with your API key.
 # This global configuration is important for all subsequent API calls.
@@ -72,9 +68,9 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 
 class CalorieEstimator:
-    def __init__(self, api_key):
-        # api_key is now configured globally via genai.configure, but storing it for consistency.
-        self.api_key = api_key
+    def __init__(self, api_key=None): # api_key parameter is now optional as it's hardcoded globally
+        # api_key is now configured globally via genai.configure, so no need to store it in self.api_key.
+        # This parameter can be removed entirely if desired, but kept for signature compatibility.
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
@@ -200,8 +196,8 @@ async def main():
     dataset_path = os.path.join(script_dir, 'DATASET') # Assuming a 'DATASET' folder exists
     results_dir = "estimation_results"
 
-    # Initialize CalorieEstimator (API key handled globally by genai.configure())
-    estimator = CalorieEstimator(api_key=GEMINI_API_KEY)
+    # Initialize CalorieEstimator (API key is now hardcoded and configured globally)
+    estimator = CalorieEstimator()
 
     csv_path = os.path.join(dataset_path, 'processed_labels.csv')
     if not os.path.exists(csv_path):
