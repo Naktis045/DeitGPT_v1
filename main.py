@@ -46,26 +46,18 @@ Valid response examples:
 * CALORIES: 320
 """
 
-# --- API Key Management (Crucial for preventing the OSError) ---
-# Your API key is now hardcoded directly as requested.
-# WARNING: Hardcoding API keys is generally not recommended for production
-# environments due to security risks. Consider using environment variables
-# or Streamlit Cloud secrets for better security practices.
-GEMINI_API_KEY = "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns"
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# Removed previous environment variable loading and placeholder checks:
-# load_dotenv()
-# GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-# PLACEHOLDER_KEY = 'YOUR_UNIQUE_GEMINI_API_KEY_PLACEHOLDER_HERE'
-# if not GEMINI_API_KEY:
-#     GEMINI_API_KEY = PLACEHOLDER_KEY
-# if GEMINI_API_KEY == PLACEHOLDER_KEY:
-#     raise EnvironmentError(...)
+# Check if the API key was successfully loaded. If not, raise an error.
+if not GEMINI_API_KEY:
+    raise EnvironmentError(
+        "GEMINI_API_KEY not found. Please set it in your .env file "
+        "or as an environment variable."
+    )
 
 # Configure the genai library with your API key.
 # This global configuration is important for all subsequent API calls.
 genai.configure(api_key=GEMINI_API_KEY)
-
 
 class CalorieEstimator:
     def __init__(self, api_key=None): # api_key parameter is now optional as it's hardcoded globally

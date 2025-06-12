@@ -4,13 +4,8 @@ from PIL import Image
 import tempfile
 import os
 from main import CalorieEstimator # Import your CalorieEstimator class
-# Removed: from dotenv import load_dotenv
 
-# Note: GEMINI_API_KEY is now directly set in main.py, so no need to fetch it here.
-# Removed: GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# Initialize the CalorieEstimator. The API key is now handled internally by main.py
-# which has the key hardcoded.
 estimator = CalorieEstimator()
 
 
