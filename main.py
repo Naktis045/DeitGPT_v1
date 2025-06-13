@@ -58,6 +58,8 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 class CalorieEstimator:
     def __init__(self, api_key=None): # api_key parameter is now optional as it's hardcoded globally
+        # api_key is now configured globally via genai.configure, so no need to store it in self.api_key.
+        # This parameter can be removed entirely if desired, but kept for signature compatibility.
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
@@ -85,6 +87,8 @@ class CalorieEstimator:
     @retry(
         wait=wait_exponential(multiplier=1, min=4, max=20), # Exponential backoff for retries
         stop=stop_after_attempt(5), # Try up to 5 times
+        # Retry for any general exception, or specific API errors if identified.
+        # asyncio.TimeoutError is added for potential async operation timeouts.
         retry=retry_if_exception_type((Exception, asyncio.TimeoutError)),
         retry_error_callback=lambda retry_state: { # Callback if all retries fail
             "error": f"All retries failed: {retry_state.outcome.exception()}",
@@ -100,12 +104,17 @@ class CalorieEstimator:
         try:
             img_pil = self.encode_image_to_pil_image(image_path)
 
+            # Gemini API expects content as a list of parts (text and image).
+            # The system prompt and user query are combined here.
             parts = [
                 self.system_prompt, # System instruction can be a part
                 "What is the total calorie count for this meal? Remember to format your final answer as CALORIES:[number]",
                 img_pil # Pass the PIL Image object directly
             ]
-            
+
+            # The generate_content method automatically handles API calls and authentication.
+            # Using asyncio.to_thread to run blocking genai.generate_content in an async context,
+            # which is necessary because Streamlit's event loop might be blocked otherwise.
             response = await asyncio.to_thread(self.model.generate_content, parts, stream=False)
 
             return self._parse_api_response(response)

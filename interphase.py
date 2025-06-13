@@ -51,7 +51,7 @@ elif st.session_state.page == "login":
 if st.session_state.page == "diet" or ("logged_in" in st.session_state and st.session_state.logged_in):
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         st.warning("🔐 Please log in to use DietGPT")
-    
+
     # --- Sugar Rate Slider and Logic ---
 sugar = st.slider('Define your sugar rate', min_value=0.0, max_value=12.0, step=0.5, value=5.0)
 st.write("Your sugar is:", sugar)
@@ -136,7 +136,7 @@ elif 7 < sugar <= 12: # Changed from 7 <= sugar to 7 < sugar to avoid overlap wi
 
     # --- Meal Photo Upload and Calorie Estimation ---
 uploaded_file = st.file_uploader(
-    "📷 Upload or take a meal photo",
+        "📷 Upload or take a meal photo",
     type=["jpg", "jpeg", "png"],
     accept_multiple_files=False,
     label_visibility="visible"
