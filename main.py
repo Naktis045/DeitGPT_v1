@@ -1,19 +1,19 @@
 import logging
 import os
-import datetime as dt # Not directly used in the provided snippet but often useful
-import base64 # Not directly used for PIL image but common for other image handling
+import datetime as dt 
+import base64 
 import io
 import re
 import asyncio
 
-from dotenv import load_dotenv
+
 from PIL import Image
-import pandas as pd # Used in the batch processing 'main' function, not the CalorieEstimator itself
+import pandas as pd 
 import google.generativeai as genai
 from tenacity import (
     retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 )
-from tqdm import tqdm # Used for progress bar in batch processing
+from tqdm import tqdm 
 
 # Configure logging for better visibility and debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,35 +45,21 @@ Valid response examples:
 * CALORIES: 320
 """
 
-# --- API Key Management (Crucial for preventing the OSError) ---
-# Your API key is now hardcoded directly as requested.
-# WARNING: Hardcoding API keys is generally not recommended for production
-# environments due to security risks. Consider using environment variables
-# or Streamlit Cloud secrets for better security practices.
-GEMINI_API_KEY = "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns"
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# Removed previous environment variable loading and placeholder checks:
-# load_dotenv()
-# GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-# PLACEHOLDER_KEY = 'YOUR_UNIQUE_GEMINI_API_KEY_PLACEHOLDER_HERE'
-# if not GEMINI_API_KEY:
-#     GEMINI_API_KEY = PLACEHOLDER_KEY
-# if GEMINI_API_KEY == PLACEHOLDER_KEY:
-#     raise EnvironmentError(...)
-
-# Configure the genai library with your API key.
-# This global configuration is important for all subsequent API calls.
+# Check if the API key was successfully loaded. If not, raise an error.
+if not GEMINI_API_KEY:
+    raise EnvironmentError(
+        "GEMINI_API_KEY not found. Please set it in your .env file "
+        "or as an environment variable."
+    )
 genai.configure(api_key=GEMINI_API_KEY)
-
 class CalorieEstimator:
-    def __init__(self, api_key):
-        # api_key is now configured globally via genai.configure, but storing it for consistency.
-        self.api_key = api_key
+    def __init__(self, api_key=None): 
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
         self.model = genai.GenerativeModel(self.model_name)
-
     @staticmethod
     def encode_image_to_pil_image(image_path):
         """
