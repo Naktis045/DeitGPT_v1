@@ -54,14 +54,12 @@ if not GEMINI_API_KEY:
         "or as an environment variable."
     )
 genai.configure(api_key=GEMINI_API_KEY)
-
 class CalorieEstimator:
     def __init__(self, api_key=None): 
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
         self.model = genai.GenerativeModel(self.model_name)
-
     @staticmethod
     def encode_image_to_pil_image(image_path):
         """
