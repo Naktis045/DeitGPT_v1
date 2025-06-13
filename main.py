@@ -1,19 +1,20 @@
 import logging
 import os
-import datetime as dt 
-import base64 
+import datetime as dt # Not directly used in the provided snippet but often useful
+import base64 # Not directly used for PIL image but common for other image handling
 import io
 import re
 import asyncio
 
+# Removed: from dotenv import load_dotenv # No longer needed as key is hardcoded
 
 from PIL import Image
-import pandas as pd 
+import pandas as pd # Used in the batch processing 'main' function, not the CalorieEstimator itself
 import google.generativeai as genai
 from tenacity import (
     retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 )
-from tqdm import tqdm 
+from tqdm import tqdm # Used for progress bar in batch processing
 
 # Configure logging for better visibility and debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,12 +55,14 @@ if not GEMINI_API_KEY:
         "or as an environment variable."
     )
 genai.configure(api_key=GEMINI_API_KEY)
+
 class CalorieEstimator:
-    def __init__(self, api_key=None): 
+    def __init__(self, api_key=None): # api_key parameter is now optional as it's hardcoded globally
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
         self.model = genai.GenerativeModel(self.model_name)
+
     @staticmethod
     def encode_image_to_pil_image(image_path):
         """
@@ -102,7 +105,7 @@ class CalorieEstimator:
                 "What is the total calorie count for this meal? Remember to format your final answer as CALORIES:[number]",
                 img_pil # Pass the PIL Image object directly
             ]
-
+            
             response = await asyncio.to_thread(self.model.generate_content, parts, stream=False)
 
             return self._parse_api_response(response)
