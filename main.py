@@ -1,19 +1,19 @@
 import logging
 import os
-import datetime as dt # Not directly used in the provided snippet but often useful
-import base64 # Not directly used for PIL image but common for other image handling
+import datetime as dt 
+import base64 
 import io
 import re
 import asyncio
 
-from dotenv import load_dotenv
+
 from PIL import Image
-import pandas as pd # Used in the batch processing 'main' function, not the CalorieEstimator itself
+import pandas as pd 
 import google.generativeai as genai
 from tenacity import (
     retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 )
-from tqdm import tqdm # Used for progress bar in batch processing
+from tqdm import tqdm 
 
 # Configure logging for better visibility and debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,30 +45,18 @@ Valid response examples:
 * CALORIES: 320
 """
 
-# --- API Key Management (Crucial for preventing the OSError) ---
-# Your API key is now hardcoded directly as requested.
-# WARNING: Hardcoding API keys is generally not recommended for production
-# environments due to security risks. Consider using environment variables
-# or Streamlit Cloud secrets for better security practices.
-GEMINI_API_KEY = "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns"
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# Removed previous environment variable loading and placeholder checks:
-# load_dotenv()
-# GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-# PLACEHOLDER_KEY = 'YOUR_UNIQUE_GEMINI_API_KEY_PLACEHOLDER_HERE'
-# if not GEMINI_API_KEY:
-#     GEMINI_API_KEY = PLACEHOLDER_KEY
-# if GEMINI_API_KEY == PLACEHOLDER_KEY:
-#     raise EnvironmentError(...)
-
-# Configure the genai library with your API key.
-# This global configuration is important for all subsequent API calls.
+# Check if the API key was successfully loaded. If not, raise an error.
+if not GEMINI_API_KEY:
+    raise EnvironmentError(
+        "GEMINI_API_KEY not found. Please set it in your .env file "
+        "or as an environment variable."
+    )
 genai.configure(api_key=GEMINI_API_KEY)
 
 class CalorieEstimator:
-    def __init__(self, api_key):
-        # api_key is now configured globally via genai.configure, but storing it for consistency.
-        self.api_key = api_key
+    def __init__(self, api_key=None): 
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
@@ -96,8 +84,6 @@ class CalorieEstimator:
     @retry(
         wait=wait_exponential(multiplier=1, min=4, max=20), # Exponential backoff for retries
         stop=stop_after_attempt(5), # Try up to 5 times
-        # Retry for any general exception, or specific API errors if identified.
-        # asyncio.TimeoutError is added for potential async operation timeouts.
         retry=retry_if_exception_type((Exception, asyncio.TimeoutError)),
         retry_error_callback=lambda retry_state: { # Callback if all retries fail
             "error": f"All retries failed: {retry_state.outcome.exception()}",
@@ -113,17 +99,12 @@ class CalorieEstimator:
         try:
             img_pil = self.encode_image_to_pil_image(image_path)
 
-            # Gemini API expects content as a list of parts (text and image).
-            # The system prompt and user query are combined here.
             parts = [
                 self.system_prompt, # System instruction can be a part
                 "What is the total calorie count for this meal? Remember to format your final answer as CALORIES:[number]",
                 img_pil # Pass the PIL Image object directly
             ]
 
-            # The generate_content method automatically handles API calls and authentication.
-            # Using asyncio.to_thread to run blocking genai.generate_content in an async context,
-            # which is necessary because Streamlit's event loop might be blocked otherwise.
             response = await asyncio.to_thread(self.model.generate_content, parts, stream=False)
 
             return self._parse_api_response(response)
@@ -194,8 +175,8 @@ async def main():
     dataset_path = os.path.join(script_dir, 'DATASET') # Assuming a 'DATASET' folder exists
     results_dir = "estimation_results"
 
-    # Initialize CalorieEstimator (API key handled globally by genai.configure())
-    estimator = CalorieEstimator(api_key=GEMINI_API_KEY)
+    # Initialize CalorieEstimator (API key is now hardcoded and configured globally)
+    estimator = CalorieEstimator()
 
     csv_path = os.path.join(dataset_path, 'processed_labels.csv')
     if not os.path.exists(csv_path):
