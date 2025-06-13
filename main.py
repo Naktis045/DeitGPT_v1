@@ -6,8 +6,7 @@ import io
 import re
 import asyncio
 
-# Removed: from dotenv import load_dotenv # No longer needed as key is hardcoded
-
+from dotenv import load_dotenv
 from PIL import Image
 import pandas as pd # Used in the batch processing 'main' function, not the CalorieEstimator itself
 import google.generativeai as genai
@@ -46,23 +45,30 @@ Valid response examples:
 * CALORIES: 320
 """
 
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+# --- API Key Management (Crucial for preventing the OSError) ---
+# Your API key is now hardcoded directly as requested.
+# WARNING: Hardcoding API keys is generally not recommended for production
+# environments due to security risks. Consider using environment variables
+# or Streamlit Cloud secrets for better security practices.
+GEMINI_API_KEY = "AIzaSyAJV2C-skymKknmkuusvGwma135kKPACns"
 
-# Check if the API key was successfully loaded. If not, raise an error.
-if not GEMINI_API_KEY:
-    raise EnvironmentError(
-        "GEMINI_API_KEY not found. Please set it in your .env file "
-        "or as an environment variable."
-    )
+# Removed previous environment variable loading and placeholder checks:
+# load_dotenv()
+# GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+# PLACEHOLDER_KEY = 'YOUR_UNIQUE_GEMINI_API_KEY_PLACEHOLDER_HERE'
+# if not GEMINI_API_KEY:
+#     GEMINI_API_KEY = PLACEHOLDER_KEY
+# if GEMINI_API_KEY == PLACEHOLDER_KEY:
+#     raise EnvironmentError(...)
 
 # Configure the genai library with your API key.
 # This global configuration is important for all subsequent API calls.
 genai.configure(api_key=GEMINI_API_KEY)
 
 class CalorieEstimator:
-    def __init__(self, api_key=None): # api_key parameter is now optional as it's hardcoded globally
-        # api_key is now configured globally via genai.configure, so no need to store it in self.api_key.
-        # This parameter can be removed entirely if desired, but kept for signature compatibility.
+    def __init__(self, api_key):
+        # api_key is now configured globally via genai.configure, but storing it for consistency.
+        self.api_key = api_key
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
         self.model_name = "gemini-1.5-flash"
@@ -188,8 +194,8 @@ async def main():
     dataset_path = os.path.join(script_dir, 'DATASET') # Assuming a 'DATASET' folder exists
     results_dir = "estimation_results"
 
-    # Initialize CalorieEstimator (API key is now hardcoded and configured globally)
-    estimator = CalorieEstimator()
+    # Initialize CalorieEstimator (API key handled globally by genai.configure())
+    estimator = CalorieEstimator(api_key=GEMINI_API_KEY)
 
     csv_path = os.path.join(dataset_path, 'processed_labels.csv')
     if not os.path.exists(csv_path):

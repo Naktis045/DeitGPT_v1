@@ -3,11 +3,9 @@ import asyncio
 from PIL import Image
 import tempfile
 import os
-from main import CalorieEstimator # Import your CalorieEstimator class
+from main import CalorieEstimator, GEMINI_API_KEY # Import your CalorieEstimator class and GEMINI_API_KEY
 
-
-estimator = CalorieEstimator()
-
+estimator = CalorieEstimator(api_key=GEMINI_API_KEY)
 
 # --- Streamlit Page Configuration and Initial State ---
 st.set_page_config(page_title="DietGPT", layout="centered")
@@ -38,7 +36,7 @@ Valid response examples:
 st.markdown("🔐 Please log in to use DietGPT **log in**.")
 
 
-# --- Page Navigation Logic  ---
+# --- Page Navigation Logic   ---
 if st.session_state.page == "home":
     if st.button("🔐 Login"):
         st.session_state.page = "login"
@@ -53,7 +51,7 @@ elif st.session_state.page == "login":
 if st.session_state.page == "diet" or ("logged_in" in st.session_state and st.session_state.logged_in):
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         st.warning("🔐 Please log in to use DietGPT")
-
+    
     # --- Sugar Rate Slider and Logic ---
 sugar = st.slider('Define your sugar rate', min_value=0.0, max_value=12.0, step=0.5, value=5.0)
 st.write("Your sugar is:", sugar)
@@ -81,56 +79,56 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
     # Logic based on sugar rate value
-if 0 <= sugar <= 4:
+if 0 <= sugar <= 3.5:
     st.markdown(f"<span style='color: red;'>Your sugar is too low: {sugar}</span>", unsafe_allow_html=True)
     st.warning("🚨 **Call Ambulance!** Your sugar level is critically low.")
 
-elif 4 <= sugar <= 3.4:
+elif 3.6 <= sugar <= 3.8:
     st.markdown(f"<span style='color: blue;'>Your sugar is low: {sugar}</span>", unsafe_allow_html=True)
     st.info("""
-    🟦 **1. Low Sugar Rate (Hypoglycemia)**
+        🟦 **1. Low Sugar Rate (Hypoglycemia)**
 
-    When your blood sugar is too low, the goal is to raise it safely and maintain stability throughout the day.
+        When your blood sugar is too low, the goal is to raise it safely and maintain stability throughout the day.
 
-    **What to Eat:**
+        **What to Eat:**
 
-    * **Frequent small meals:** Eat every 3–4 hours to prevent dips.
-    * **Complex carbs + protein:** Whole grains (like oats or brown rice) with lean protein (chicken, tofu, eggs).
-    * **Healthy snacks:** Apple slices with peanut butter, Greek yogurt with berries, or a handful of nuts.
-    * **Soluble fiber:** Beans, lentils, and oats help slow sugar absorption.
-    * **Natural sugars (in moderation):** Fresh fruits like bananas or oranges can give a quick boost.
+        * **Frequent small meals:** Eat every 3–4 hours to prevent dips.
+        * **Complex carbs + protein:** Whole grains (like oats or brown rice) with lean protein (chicken, tofu, eggs).
+        * **Healthy snacks:** Apple slices with peanut butter, Greek yogurt with berries, or a handful of nuts.
+        * **Soluble fiber:** Beans, lentils, and oats help slow sugar absorption.
+        * **Natural sugars (in moderation):** Fresh fruits like bananas or oranges can give a quick boost.
 
-    **What to Avoid:**
+        **What to Avoid:**
 
-    * Sugary drinks or candy (unless treating an acute low).
-    * Alcohol and caffeine on an empty stomach.
-    * Skipping meals.
-    """)
-elif 3.5 <= sugar <=5.5:
+        * Sugary drinks or candy (unless treating an acute low).
+        * Alcohol and caffeine on an empty stomach.
+        * Skipping meals.
+        """)
+elif 3.9 <= sugar <=5.5:
     st.markdown(f"<span style='color: green;'>Your sugar is in a normal range: {sugar}</span>", unsafe_allow_html=True)
     st.success("✅ Your sugar level is currently in a healthy range. Keep up the good work!")
 
 elif 5.6 <= sugar <= 7:
     st.markdown(f"<span style='color: red;'>Your sugar is too high: {sugar}</span>", unsafe_allow_html=True)
     st.info("""
-    🟥 **2. High Sugar Rate (Hyperglycemia)**
+        🟥 **2. High Sugar Rate (Hyperglycemia)**
 
-    Here, the focus is on lowering and stabilizing blood sugar through balanced, low-glycemic meals.
+        Here, the focus is on lowering and stabilizing blood sugar through balanced, low-glycemic meals.
 
-    **What to Eat:**
+        **What to Eat:**
 
-    * **Non-starchy vegetables:** Broccoli, spinach, peppers, cauliflower.
-    * **Whole grains:** Quinoa, barley, whole wheat pasta (in moderation).
-    * **Lean proteins:** Fish, turkey, legumes, tofu.
-    * **Healthy fats:** Avocados, olive oil, nuts.
-    * **Low-GI fruits:** Berries, apples, pears.
+        * **Non-starchy vegetables:** Broccoli, spinach, peppers, cauliflower.
+        * **Whole grains:** Quinoa, barley, whole wheat pasta (in moderation).
+        * **Lean proteins:** Fish, turkey, legumes, tofu.
+        * **Healthy fats:** Avocados, olive oil, nuts.
+        * **Low-GI fruits:** Berries, apples, pears.
 
-    **What to Avoid:**
+        **What to Avoid:**
 
-    * Refined carbs: White bread, pastries, sugary cereals.
-    * Sweetened beverages: Soda, sweetened teas, energy drinks.
-    * Processed snacks: Chips, cookies, and fast food.
-    """)
+        * Refined carbs: White bread, pastries, sugary cereals.
+        * Sweetened beverages: Soda, sweetened teas, energy drinks.
+        * Processed snacks: Chips, cookies, and fast food.
+        """)
 elif 7 < sugar <= 12: # Changed from 7 <= sugar to 7 < sugar to avoid overlap with 6-7 range
     st.markdown(f"<span style='color: red;'>Your sugar is too high: {sugar}</span>", unsafe_allow_html=True)
     st.warning("🚨 **Call Ambulance!** Your sugar level is critically high.")
@@ -142,7 +140,7 @@ uploaded_file = st.file_uploader(
     type=["jpg", "jpeg", "png"],
     accept_multiple_files=False,
     label_visibility="visible"
-    )
+        )
 
 if uploaded_file:
     image = Image.open(uploaded_file)
@@ -159,10 +157,9 @@ if uploaded_file:
             finally:
                 os.remove(temp_path)
 
-            # Display the estimation result to the user
+                # Display the estimation result to the user
         if "total_calories" in result:
             st.success(f"✅ Calorie Estimation Result: {result['raw_output']}")
         else:
             st.error("❌ Could not extract calorie count. Please try another image or check the API key.")
             st.text_area("Raw Output from AI (for debugging):", result.get("raw_output", "No output returned."), height=100)
-
