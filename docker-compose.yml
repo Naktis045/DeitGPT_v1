@@ -1,0 +1,39 @@
+# docker-compose.yml
+version: '3.8' # Specify the Docker Compose file format version
+
+services:
+  streamlit-app:
+    # Build the image using the Dockerfile in the current directory
+    build:
+      context: . # Look for the Dockerfile in the current directory
+      dockerfile: Dockerfile # Specify the Dockerfile name
+
+    # Map port 8501 on the host to port 8501 in the container
+    # Streamlit runs on port 8501 by default
+    ports:
+      - "8501:8501"
+
+    # Mount the current directory into the container's /app directory.
+    # This is useful for development as code changes on your host machine
+    # will instantly reflect inside the container without needing to rebuild
+    # the image. For production, you might remove this to ensure the image
+    # is self-contained.
+    volumes:
+      - .:/app
+
+    # Set environment variables for the container.
+    # It's highly recommended to use a .env file for sensitive data
+    # (like GEMINI_API_KEY) in a real-world scenario.
+    # Docker Compose will automatically load variables from a .env file
+    # in the same directory as this docker-compose.yml file.
+    environment:
+      # This will be picked up by Streamlit's st.secrets if configured,
+      # or by os.getenv directly if you were using that.
+      # For now, ensure GEMINI_API_KEY is present in a .env file
+      # or uncomment and replace the placeholder below for quick testing.
+      # GEMINI_API_KEY: "${GEMINI_API_KEY}" # This reads from a .env file
+
+    # Command to run when the container starts.
+    # This overrides the ENTRYPOINT in the Dockerfile if you uncomment it,
+    # but since your Dockerfile's ENTRYPOINT is correct, we'll rely on that.
+    # command: ["streamlit", "run", "interphase.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
