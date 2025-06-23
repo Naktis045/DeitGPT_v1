@@ -16,24 +16,21 @@ services:
     # Mount the current directory into the container's /app directory.
     # This is useful for development as code changes on your host machine
     # will instantly reflect inside the container without needing to rebuild
-    # the image. For production, you might remove this to ensure the image
-    # is self-contained.
+    # the image.
     volumes:
       - .:/app
 
+    # --- CORRECTED PART HERE ---
     # Set environment variables for the container.
-    # It's highly recommended to use a .env file for sensitive data
-    # (like GEMINI_API_KEY) in a real-world scenario.
+    # This must be a mapping (dictionary), not a list.
     # Docker Compose will automatically load variables from a .env file
     # in the same directory as this docker-compose.yml file.
     environment:
-      # This will be picked up by Streamlit's st.secrets if configured,
-      # or by os.getenv directly if you were using that.
-      # For now, ensure GEMINI_API_KEY is present in a .env file
-      # or uncomment and replace the placeholder below for quick testing.
-      # GEMINI_API_KEY: "${GEMINI_API_KEY}" # This reads from a .env file
+      GEMINI_API_KEY: "${GEMINI_API_KEY}" # <-- NO HYPHEN HERE, it's a key-value pair
+      # Add other environment variables here if needed
+      # ANOTHER_VAR: "another_value"
 
     # Command to run when the container starts.
-    # This overrides the ENTRYPOINT in the Dockerfile if you uncomment it,
-    # but since your Dockerfile's ENTRYPOINT is correct, we'll rely on that.
+    # This overrides the ENTRYPOINT in the Dockerfile if you uncomment it.
+    # Given your Dockerfile already has the correct ENTRYPOINT, you can keep this commented.
     # command: ["streamlit", "run", "interphase.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
