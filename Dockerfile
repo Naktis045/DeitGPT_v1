@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy your application files into the container
 # Assuming main.py and interphase.py are in the root of your project
+COPY pages/login.py .
 COPY main.py .
 COPY interphase.py .
 # If you have a 'pages' directory for Streamlit, copy it too
