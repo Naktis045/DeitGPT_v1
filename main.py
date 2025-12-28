@@ -62,7 +62,7 @@ class CalorieEstimator:
         # This parameter can be removed entirely if desired, but kept for signature compatibility.
         self.system_prompt = SYSTEM_PROMPT
         # Use a compatible Gemini model for vision tasks (e.g., gemini-1.5-flash for speed)
-        self.model_name = "gemini-2.5-flash"
+        self.model_name = "gemini-3-flash-preview"
         self.model = genai.GenerativeModel(self.model_name)
 
     @staticmethod
